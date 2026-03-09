@@ -1,0 +1,290 @@
+# 自动化测试教学平台 — 项目规划书
+
+> **定位**：面向测试方向实习生的一体化学习与实践平台，覆盖接口测试、UI 测试、性能测试全链路，配套任务体系与报告中心。
+
+---
+
+## 一、项目背景与目标
+
+| 维度 | 说明 |
+|------|------|
+| **受众** | 测试方向实习生（0~1 年经验） |
+| **目的** | 通过真实项目环境手把手掌握自动化测试体系 |
+| **核心价值** | 学中做、做中学；可量化的学习进度与测试报告 |
+| **交付周期** | 规划 4 个迭代（共约 16 周） |
+
+---
+
+## 二、核心功能模块
+
+### 模块一：用户与权限管理
+- 角色体系：超级管理员 / 导师 / 实习生
+- JWT 登录鉴权，RBAC 细粒度权限控制
+- 个人学习档案、积分成就系统
+
+### 模块二：接口测试（API Testing）
+- 项目 / 模块 / 用例三级树形管理
+- 可视化 HTTP 请求编排（Method、Headers、Params、Body）
+- 动态变量提取（JSONPath / 正则），变量引用 `${var}`
+- 数据驱动测试（CSV / Excel / JSON 数据源）
+- 多环境配置（dev / test / prod）快速切换
+- **底层引擎**：`httpx` + `pytest` + `allure`
+
+### 模块三：UI 自动化测试
+- 测试用例录制与回放（基于 Playwright）
+- 元素定位策略管理（CSS / XPath / Text）
+- 页面截图自动对比，失败截图归档
+- 浏览器矩阵配置（Chromium / Firefox / Safari）
+- **底层引擎**：`playwright-python` + `pytest-playwright`
+
+### 模块四：性能测试
+- 基于 Locust 的脚本编写与可视化配置
+- 并发用户数、Ramp-up、持续时长参数配置
+- 实时 TPS / 响应时间 / 错误率监控图表
+- 性能基准对比（与历史记录对比）
+
+### 模块五：测试套件 & 调度中心
+- 跨模块用例组合为测试套件
+- Cron 表达式定时调度（APScheduler）
+- 触发方式：手动 / 定时 / Webhook / CI 事件
+- 执行队列管理，并发任务隔离（Celery + Redis）
+
+### 模块六：测试报告中心
+- Allure 报告在线预览（内嵌 iframe）
+- 自定义 Dashboard：通过率趋势、用例分布饼图
+- 报告导出（HTML / PDF）
+- 失败用例自动告警（邮件 / 企业微信 / 钉钉）
+
+### 模块七：CI/CD 集成
+- Jenkins / GitHub Actions Pipeline 触发接口
+- Webhook 接收外部触发
+- Badge 徽标状态输出
+
+### 模块八：教学体系
+- 知识库文章管理（Markdown 渲染）
+- 实习任务工单系统（下发 → 提交 → 批改）
+- 在线代码沙箱（Jupyter Kernel 隔离执行）
+- 实习生学习进度看板（导师视角）
+
+### 模块九：Mock 服务
+- 可视化规则配置 HTTP Mock 接口
+- 支持正则路由、请求匹配、响应模板
+- 实习生可独立搭建练习环境
+
+---
+
+## 三、技术栈
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      前  端                              │
+│  Vue 3 + TypeScript  │  Element Plus  │  Vite 5         │
+│  Pinia（状态管理）   │  Vue Router 4  │  ECharts        │
+│  Monaco Editor（代码编辑器）                             │
+└───────────────────────────┬─────────────────────────────┘
+                            │ REST / WebSocket
+┌───────────────────────────▼─────────────────────────────┐
+│                     后  端                               │
+│  FastAPI（主框架）  │  Pydantic v2（数据校验）           │
+│  SQLAlchemy 2.0    │  Alembic（数据库迁移）              │
+│  Celery + Redis    │  APScheduler（定时任务）             │
+│  pytest / httpx / playwright-python / locust            │
+│  Allure CLI（报告生成）  │  Jinja2（模板渲染）            │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────────┐
+│                    存  储  层                             │
+│  PostgreSQL（主数据库）  │  Redis（缓存/消息队列）        │
+│  MinIO（测试报告/截图文件存储）                          │
+└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    DevOps / 部署                          │
+│  Docker + Docker Compose  │  Nginx（反向代理）           │
+│  GitHub Actions / Jenkins │  Prometheus + Grafana        │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 四、系统架构图
+
+```mermaid
+graph TB
+    A[浏览器 / 实习生] -->|HTTPS| B[Nginx]
+    B --> C[React 前端]
+    B -->|/api| D[FastAPI 后端]
+    D --> E[(PostgreSQL)]
+    D --> F[(Redis)]
+    D --> G[Celery Worker]
+    G --> H[pytest 引擎]
+    G --> I[Playwright 引擎]
+    G --> J[Locust 引擎]
+    H & I & J --> K[Allure 报告]
+    K --> L[(MinIO 文件存储)]
+    D --> L
+    D --> M[告警服务\n邮件/钉钉/企微]
+```
+
+---
+
+## 五、三天架构搭建计划（框架骨架 Sprint）
+
+> **目标**：三天内完成可运行的项目骨架，前后端联通、数据库初始化、Docker 一键启动。
+
+### Day 1 — 后端骨架 + 数据库
+
+| 时间 | 任务 | 产出 |
+|------|------|------|
+| 上午 | 初始化 FastAPI 项目结构，配置 `pyproject.toml` | 目录骨架、依赖锁定 |
+| 上午 | 设计并编写核心 SQLAlchemy 模型（User/Project/TestCase/Report） | `models/` 完成 |
+| 下午 | Alembic 初始化，生成并执行首次迁移 | 数据库表结构就绪 |
+| 下午 | 编写 JWT 登录注册接口（`/auth/login` `/auth/register`） | 鉴权接口可用 |
+| 下午 | 配置 Celery + Redis，编写 Hello World 异步任务 | 任务队列跑通 |
+| 收尾 | 编写 `docker-compose.yml`（PostgreSQL + Redis + Backend） | 后端容器化启动 |
+
+```
+验收：curl /api/v1/auth/login 返回 JWT Token ✅
+      Celery Worker 日志显示任务执行成功 ✅
+```
+
+---
+
+### Day 2 — 前端骨架 + 前后端联通
+
+| 时间 | 任务 | 产出 |
+|------|------|------|
+| 上午 | `npm create vue@latest` 初始化项目，配置 TS + Vite + Vue Router | 前端项目骨架 |
+| 上午 | 配置 Pinia Store（user/auth），封装 `axios` 请求拦截器（JWT 自动注入） | 网络层完成 |
+| 上午 | 搭建整体布局：侧边导航 + 顶部 Header + 内容区（Element Plus） | 主框架页面 |
+| 下午 | 开发登录页（`/login`），对接后端 `/auth/login`，登录后跳转首页 | 登录功能闭环 |
+| 下午 | 路由守卫（未登录跳转 `/login`），Token 持久化（localStorage） | 权限基础完成 |
+| 下午 | Nginx 配置前端静态托管 + 接口反向代理，加入 `docker-compose.yml` | 全栈容器化 |
+| 收尾 | 首页 Dashboard 空骨架（ECharts 占位图） | 界面初步可展示 |
+
+```
+验收：浏览器访问 http://localhost 显示登录页 ✅
+      登录成功后看到 Dashboard 框架 ✅
+```
+
+---
+
+### Day 3 — 核心模块骨架 + 联调
+
+| 时间 | 任务 | 产出 |
+|------|------|------|
+| 上午 | 后端：Project / TestCase CRUD 接口（列表、创建、详情、删除） | 核心资源接口 |
+| 上午 | 后端：测试执行接口（触发 Celery 任务，返回 task_id） | 异步执行链路 |
+| 上午 | 后端：WebSocket 端点，推送 Celery 任务实时日志 | 实时日志流 |
+| 下午 | 前端：项目列表页 + 用例列表页（Element Plus Table，对接接口） | 列表页面联调 |
+| 下午 | 前端：用例执行按钮 → 轮询/WebSocket 显示执行日志 | 执行流程闭环 |
+| 下午 | 前端：报告列表页骨架（iframe 预留 Allure 展示位） | 报告模块占位 |
+| 收尾 | 补充 README（本地开发 & Docker 启动说明），整理接口文档（FastAPI 自动生成） | 文档完善 |
+
+```
+验收：点击「执行」按钮，前端实时展示日志，执行完成后报告列表出现条目 ✅
+      docker-compose up 一键启动全部服务 ✅
+```
+
+---
+
+### 三天最终产出
+
+```
+autotest-platform/
+├── backend/          ← FastAPI + Celery，JWT鉴权，CRUD接口，WebSocket
+├── frontend/         ← Vue3 + Element Plus，登录/项目/用例/报告四页
+├── docker-compose.yml  ← 一键启动 PG + Redis + Backend + Frontend
+└── README.md
+```
+
+---
+
+## 六、迭代计划
+
+| 阶段 | 周期 | 交付物 |
+|------|------|--------|
+| **三天骨架 Sprint** | 第 1~3 天 | 详见「三天架构搭建计划」 |
+| **Sprint 1 — 接口测试** | 第 1~4 周 | 用户权限完善、接口测试核心引擎、数据驱动、基础报告 |
+| **Sprint 2 — UI & 调度** | 第 5~8 周 | Playwright UI 测试、套件管理、定时调度、Celery 任务队列 |
+| **Sprint 3 — 性能 & 教学** | 第 9~12 周 | Locust 性能测试、Mock 服务、任务工单、代码沙箱 |
+| **Sprint 4 — 集成 & 运营** | 第 13~16 周 | CI/CD 集成、告警、Prometheus 监控、文档完善、上线 |
+
+---
+
+## 七、目录结构（后端）
+
+```
+autotest-platform/
+├── backend/
+│   ├── alembic/               # 数据库迁移脚本
+│   ├── app/
+│   │   ├── api/               # FastAPI 路由层
+│   │   │   ├── v1/
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── projects.py
+│   │   │   │   ├── testcases.py
+│   │   │   │   ├── reports.py
+│   │   │   │   └── tasks.py
+│   │   ├── core/              # 配置、安全、依赖注入
+│   │   ├── engines/           # 测试执行引擎
+│   │   │   ├── api_runner.py  # httpx + pytest
+│   │   │   ├── ui_runner.py   # playwright
+│   │   │   └── perf_runner.py # locust
+│   │   ├── models/            # SQLAlchemy ORM 模型
+│   │   ├── schemas/           # Pydantic 请求/响应模型
+│   │   ├── services/          # 业务逻辑层
+│   │   ├── tasks/             # Celery 异步任务
+│   │   └── utils/             # 公共工具（报告/告警/变量替换）
+│   ├── tests/                 # 平台自身单元测试
+│   └── main.py
+├── frontend/                  # React + TypeScript
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## 八、核心数据模型（ER 概览）
+
+```
+User ──< Project ──< Module ──< TestCase ──< TestStep
+                         └──< TestSuite ──< SuiteCase
+                         └──< TestJob ──< JobReport
+Environment ──< EnvVariable
+MockRule
+LearningTask ──< TaskSubmission
+```
+
+---
+
+## 九、关键技术难点与解决方案
+
+| 难点 | 解决方案 |
+|------|----------|
+| 测试用例并发执行隔离 | Celery 多 Worker + 独立 pytest 进程（subprocess） |
+| Playwright 无头浏览器部署 | Docker 镜像内置 Chromium，`--no-sandbox` 配置 |
+| 变量跨步骤传递 | 执行上下文字典 `ctx` 在 Celery 任务内全程传递 |
+| 报告实时推送 | WebSocket（FastAPI `websockets`）推送执行日志流 |
+| 代码沙箱安全隔离 | Jupyter Kernel + Docker `--memory` / `--cpus` 限制 |
+
+---
+
+## 十、团队分工建议（实习生参与）
+
+| 角色 | 职责 |
+|------|------|
+| 资深工程师（带教） | 架构设计、Code Review、核心引擎、CI/CD |
+| 实习生 A | 接口测试模块前后端 |
+| 实习生 B | UI 测试模块 + Playwright 集成 |
+| 实习生 C | 报告中心 + 告警服务 |
+| 实习生 D | 教学任务系统 + 用户权限 |
+
+---
+
+## 十一、验收标准
+
+- [ ] 实习生能独立完成接口/UI/性能三类用例的创建与执行
+- [ ] 测试报告自动生成并支持在线查看
+- [ ] 定时任务正确触发，Webhook 集成 CI 流水线
+- [ ] 代码覆盖率（平台自身）≥ 70%
+- [ ] 文档完整，包含 API 文档（自动生成）与用户手册
