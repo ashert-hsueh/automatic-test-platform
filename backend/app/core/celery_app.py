@@ -18,4 +18,6 @@ celery_app.conf.update(
     result_expires=86400,
     # 自动发现任务模块
     include=["app.tasks.test_runner"],
+    # 兼容 Celery 6.0：启动时重试 broker 连接
+    broker_connection_retry_on_startup=True,
 )

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+import uvicorn
 from app.core.config import settings
 from app.api.v1 import auth, projects, testcases, jobs
 
@@ -37,3 +37,6 @@ async def root():
 @app.get("/health", tags=["健康检查"])
 async def health():
     return {"status": "ok"}
+
+if __name__ == '__main__':
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)

@@ -1,11 +1,8 @@
 """Alembic 环境配置
 自动导入所有 ORM 模型，以便 --autogenerate 检测变更
 """
-import asyncio
 from logging.config import fileConfig
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy import pool, engine_from_config
 from alembic import context
 
 # 导入所有模型（必须在 target_metadata 之前）
@@ -14,6 +11,7 @@ from app.core.database import Base
 import app.models  # noqa: F401 — 触发所有模型注册
 
 config = context.config
+# 使用同步驱动 URL（psycopg2），供 Alembic 迁移使用
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
 
 if config.config_file_name is not None:
@@ -34,25 +32,16 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
-    with context.begin_transaction():
-        context.run_migrations()
-
-
-async def run_async_migrations() -> None:
-    connectable = async_engine_from_config(
+def run_migrations_online() -> None:
+    connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-    await connectable.dispose()
-
-
-def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+        with context.begin_transaction():
+            context.run_migrations()
 
 
 if context.is_offline_mode():
